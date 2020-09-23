@@ -272,16 +272,38 @@ int Urho3DMain(cling::Interpreter& Interp) {
     }
   }
 
+
+  std::string urho3dResourceDir = "";
+
+  if (Opts.Urho3DResourcePrefixPath != "") {
+    urho3dResourceDir = Opts.Urho3DResourcePrefixPath;
+  } else if (Urho3DHome != "") {
+    urho3dResourceDir = Urho3DHome + "/bin";
+  }
+
+  fixPath(urho3dResourceDir);
+
+  std::string classDeclaration = "class Urho3DClingProxyApplication : public " +Opts.ApplicationClassName + NL;
+  classDeclaration +=            "{" + NL;
+  classDeclaration +=               "URHO3D_OBJECT(Urho3DClingProxyApplication,  " +Opts.ApplicationClassName + ");" + NL;
+  classDeclaration +=               "Urho3DClingProxyApplication(Context* context):" +Opts.ApplicationClassName + "(context)" + NL;
+  classDeclaration +=               "{" + NL;
+  classDeclaration +=                    "engineParameters_[EP_RESOURCE_PREFIX_PATHS] = \"" +urho3dResourceDir + "\";" + NL;
+  classDeclaration +=               "}" + NL;
+  classDeclaration +=            "};" + NL;
+
+  cmd += classDeclaration + NL;
+
+
   cmd += "void urho3d_cling_main_entry_point(){" + NL;
   cmd += "Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context());" + NL;
-
   std::string appClassNameDeclaration =
-      "Urho3D::SharedPtr<" + Opts.ApplicationClassName + "> application(new " +
-      Opts.ApplicationClassName + "(context));";
+      "Urho3D::SharedPtr<Urho3DClingProxyApplication> application(new Urho3DClingProxyApplication(context));"+ NL;
 
   cmd += appClassNameDeclaration + NL;
   cmd += "application->Run();" + NL;
   cmd += "}" + NL;
+
 
   //printf("%s", cmd.c_str());
 

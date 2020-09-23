@@ -96,6 +96,7 @@ namespace cling {
     std::string ApplicationClassName;
     std::vector<std::string> Defines;
     std::string Urho3DHome;
+    std::string Urho3DResourcePrefixPath;
 
     unsigned ErrorOut : 1;
     unsigned NoLogo : 1;

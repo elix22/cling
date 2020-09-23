@@ -113,6 +113,12 @@ static const char kNoStdInc[] = "-nostdinc";
     } else {
       Opts.Urho3DHome = "";
     }
+    
+    if (Args.hasArg(OPT_pp)) {
+      Opts.Urho3DResourcePrefixPath = Args.getAllArgValues(OPT_pp).at(0);
+    } else {
+      Opts.Urho3DResourcePrefixPath = "";
+    }
   }
 }
 

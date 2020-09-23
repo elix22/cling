@@ -48,3 +48,5 @@ OPTION(prefix_1, "D", D, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
        "[Urho3D] Set  #define", 0, 0)
 OPTION(prefix_1, "U", U, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
        "[Urho3D] Set Urho3D build tree Home ", "<directory>", 0)
+OPTION(prefix_1, "pp", pp, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
+       "[Urho3D] Set resource prefix path", "<resource prefix path>", 0)
