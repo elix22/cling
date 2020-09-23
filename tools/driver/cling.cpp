@@ -24,6 +24,10 @@
 #include <vector>
 #include <string>
 
+// elix22 - Urho3D related 
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
+
 #if defined(WIN32) && defined(_MSC_VER)
 #include <crtdbg.h>
 #endif
@@ -51,6 +55,247 @@ static int checkDiagErrors(clang::CompilerInstance* CI, unsigned* OutErrs = 0) {
   return Errs ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+
+// elix22 - Urho3D related start
+bool isDir(std::string path) { 
+    bool IsDir = false; 
+    llvm::sys::fs::is_directory(path, IsDir);
+
+    return IsDir;
+}
+
+  bool isFile(std::string path) {
+  bool isFile = false;
+  bool isSymFile = false;
+  llvm::sys::fs::is_regular_file(path, isFile);
+  llvm::sys::fs::is_symlink_file(path, isSymFile);
+
+  return isFile || isSymFile;
+}
+
+
+void ReplaceString(std::string& subject, const std::string& search,
+                   const std::string& replace) {
+  size_t pos = 0;
+  while ((pos = subject.find(search, pos)) != std::string::npos) {
+    subject.replace(pos, search.length(), replace);
+    pos += replace.length();
+  }
+}
+
+void fixPath(std::string& path) {
+  ReplaceString(path, "\\", "/");
+  ReplaceString(path, "//", "/");
+}
+
+
+void getSourceCodeFilesInDirectory(const std::string& path,
+                                   std::vector<std::string>& files) {
+
+  std::error_code EC;
+  for (llvm::sys::fs::directory_iterator File(path, EC), FileEnd;
+       File != FileEnd && !EC; File.increment(EC)) {
+    bool IsDir = false;
+    bool isFile = false;
+    bool isSymFile = false;
+    llvm::sys::fs::is_directory(File->path(), IsDir);
+    llvm::sys::fs::is_regular_file(File->path(), isFile);
+    llvm::sys::fs::is_symlink_file(File->path(), isSymFile);
+
+    if (IsDir == true) {
+      StringRef dirName = llvm::sys::path::filename(File->path());
+      std::string childDirName = path + "/" + dirName.str();
+      getSourceCodeFilesInDirectory(childDirName, files);
+    } else if (isFile == true || isSymFile == true) {
+
+      StringRef ext = llvm::sys::path::extension(File->path());
+      StringRef FileName = llvm::sys::path::filename(File->path());
+      if (ext == ".cpp" || ext == ".h" || ext == ".cc" || ext == ".hpp" ||
+          ext == ".c") {
+        std::string fullPath = path + "/" + FileName.str();
+        files.push_back(fullPath);
+      }
+    }
+  }
+}
+
+void getSourceCodeFilesInDirectory(
+    cling::Interpreter& Interp, const std::string& path,
+                                   std::vector<std::string>& files,
+                                   std::vector<std::string>& headers) {
+
+  std::error_code EC;
+  for (llvm::sys::fs::directory_iterator File(path, EC), FileEnd;
+       File != FileEnd && !EC; File.increment(EC)) {
+    bool IsDir = false;
+    bool isFile = false;
+    bool isSymFile = false;
+    llvm::sys::fs::is_directory(File->path(), IsDir);
+    llvm::sys::fs::is_regular_file(File->path(), isFile);
+    llvm::sys::fs::is_symlink_file(File->path(), isSymFile);
+
+    if (IsDir == true) {
+      StringRef dirName = llvm::sys::path::filename(File->path());
+      std::string childDirName = path + "/" + dirName.str();
+
+      fixPath(childDirName);
+      Interp.AddIncludePath(childDirName);
+      getSourceCodeFilesInDirectory(Interp,childDirName, files, headers);
+
+    } else if (isFile == true || isSymFile == true) {
+
+      StringRef ext = llvm::sys::path::extension(File->path());
+      StringRef FileName = llvm::sys::path::filename(File->path());
+      if (ext == ".cpp"  || ext == ".cc" || ext == ".c") {
+        std::string fullPath = path + "/" + FileName.str();
+
+        fixPath(fullPath);
+        files.push_back(fullPath);
+      }
+      else if ( ext == ".h" || ext == ".hpp" ) {
+        std::string fullPath = path + "/" + FileName.str();
+        fixPath(fullPath);
+        headers.push_back(fullPath);
+      }
+    }
+  }
+}
+
+bool addIncludePath(cling::Interpreter& Interp, std::string path) {
+  bool res = false;
+  if (isDir(path)) {
+    Interp.AddIncludePath(path);
+    res = true;
+  } else {
+    llvm::errs() << path << " does not exist \n";
+  }
+  return res;
+}
+
+bool loadFile(cling::Interpreter& Interp, std::string path) {
+  bool res = false;
+  if (isFile(path)) {
+    Interp.loadFile(path);
+    res = true;
+  } else {
+    llvm::errs() << path << " does not exist \n";
+  }
+  return res;
+}
+
+int Urho3DMain(cling::Interpreter& Interp) {
+
+  cling::Interpreter::CompilationResult Result;
+  cling::UserInterface Ui(Interp);
+  const cling::InvocationOptions& Opts = Interp.getOptions();
+
+  std::string cmd = "";
+  std::string NL = "\n";
+
+  std::string Urho3DHome  = Opts.Urho3DHome;
+
+  if (Urho3DHome != "") {
+    fixPath(Urho3DHome);
+
+    if (!isDir(Urho3DHome)) {
+      llvm::errs() << Urho3DHome << " does not exist \n";
+      return EXIT_FAILURE;
+    }
+
+    if (!addIncludePath(Interp, Urho3DHome + "/include"))
+      return EXIT_FAILURE;
+    if (!addIncludePath(Interp, Urho3DHome + "/include/Urho3D"))
+      return EXIT_FAILURE;
+    if (!addIncludePath(Interp, Urho3DHome + "/include/Urho3D/ThirdParty"))
+      return EXIT_FAILURE;
+    if (!addIncludePath(Interp,
+                        Urho3DHome + "/include/Urho3D/ThirdParty/Bullet"))
+      return EXIT_FAILURE;
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || defined(__WIN32__)
+    std::string urho3dLib = Urho3DHome + "/bin/Urho3D.dll";
+    if (!loadFile(Interp, urho3dLib))
+      return EXIT_FAILURE;
+#elif defined(__APPLE__)
+    std::string urho3dLib = Urho3DHome + "/bin/LibUrho3D.dylib";
+    if (!loadFile(Interp, urho3dLib))return EXIT_FAILURE;
+#else
+    std::string urho3dLib = Urho3DHome + "/bin/LibUrho3D.so";
+    if (!loadFile(Interp, urho3dLib))return EXIT_FAILURE;
+#endif
+
+    }
+
+
+  cmd += "#define URHO3D_CLING" + NL;
+  cmd += "#define URHO3D_API" + NL;
+  cmd += "#define URHO3D_ANGELSCRIPT" + NL;
+  cmd += "#define URHO3D_LUA" + NL;
+  cmd += "#define URHO3D_NAVIGATION" + NL;
+  cmd += "#define URHO3D_NETWORK" + NL;
+  cmd += "#define DURHO3D_URHO2D" + NL;
+  cmd += "#define URHO3D_PHYSICS" + NL;
+  cmd += "#define URHO3D_IK" + NL;
+ 
+  for (const std::string& define : Opts.Defines) {
+    cmd += "#define " + define + NL;
+  } 
+
+  cmd += "#include <Urho3DAll.h>" + NL;
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || defined(__WIN32__)
+   cmd +=  "extern \"C\"  void __cdecl __std_reverse_trivially_swappable_8(void* "
+      "_First, void* _Last) noexcept {}" + NL;
+  cmd +=       "extern \"C\"  void __cdecl __std_reverse_trivially_swappable_4(void* "
+      "_First, void* _Last) noexcept {}" + NL;
+#endif
+
+  for (const std::string& path : Opts.PathsToLoad) {
+
+    if (llvm::sys::fs::is_directory(path) == false)
+      continue;
+
+    Interp.AddIncludePath(path);
+
+    std::vector<std::string> headers;
+    std::vector<std::string> files;
+    getSourceCodeFilesInDirectory(Interp,path, files, headers);
+
+    /*
+    for (const std::string& header : headers) {
+      cmd += "#include \"" + header + "\"" + NL;
+    }
+    */
+    
+    
+    for (const std::string& file : files) {
+        cmd += "#include \"" + file + "\"" + NL;
+    }
+  }
+
+  cmd += "void urho3d_cling_main_entry_point(){" + NL;
+  cmd += "Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context());" + NL;
+
+  std::string appClassNameDeclaration =
+      "Urho3D::SharedPtr<" + Opts.ApplicationClassName + "> application(new " +
+      Opts.ApplicationClassName + "(context));";
+
+  cmd += appClassNameDeclaration + NL;
+  cmd += "application->Run();" + NL;
+  cmd += "}" + NL;
+
+  //printf("%s", cmd.c_str());
+
+    Ui.getMetaProcessor()->process(cmd, Result, 0);
+  if (Result == cling::Interpreter::CompilationResult::kFailure)
+    return EXIT_FAILURE;
+
+   Ui.getMetaProcessor()->process("urho3d_cling_main_entry_point();", Result, 0);
+  if (Result == cling::Interpreter::CompilationResult::kFailure)
+    return EXIT_FAILURE;
+
+  return 0;
+}
+// elix22 - Urho3D related end
 
 int main( int argc, char **argv ) {
 
@@ -104,6 +349,11 @@ int main( int argc, char **argv ) {
 
   for (const std::string& Lib : Opts.LibsToLoad)
     Interp.loadFile(Lib);
+
+  // elix22 - Urho3D related
+  if (Opts.ApplicationClassName != "") {
+    return Urho3DMain(Interp);
+  }
 
   cling::UserInterface Ui(Interp);
   // If we are not interactive we're supposed to parse files

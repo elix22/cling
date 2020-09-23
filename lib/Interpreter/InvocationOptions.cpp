@@ -95,6 +95,25 @@ static const char kNoStdInc[] = "-nostdinc";
     Extend(Opts.LibsToLoad, Args.getAllArgValues(OPT_l));
     Extend(Opts.LibSearchPath, Args.getAllArgValues(OPT_L));
   }
+
+  // elix22 - Urho3D related 
+  static void ParseUrho3DOpts(cling::InvocationOptions& Opts,
+                              InputArgList& Args /* , Diags */) {
+    Extend(Opts.PathsToLoad, Args.getAllArgValues(OPT_d));
+    Extend(Opts.Defines, Args.getAllArgValues(OPT_D));
+    //
+    if (Args.hasArg(OPT_a)) {
+      Opts.ApplicationClassName = Args.getAllArgValues(OPT_a).at(0);
+    } else {
+      Opts.ApplicationClassName = "";
+    }
+
+    if (Args.hasArg(OPT_U)) {
+      Opts.Urho3DHome = Args.getAllArgValues(OPT_U).at(0);
+    } else {
+      Opts.Urho3DHome = "";
+    }
+  }
 }
 
 CompilerOptions::CompilerOptions(int argc, const char* const* argv)
@@ -220,6 +239,8 @@ InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
 
   ParseStartupOpts(*this, Args);
   ParseLinkerOpts(*this, Args);
+  // elix22 - Urho3D related
+  ParseUrho3DOpts(*this, Args);
 }
 
 void InvocationOptions::PrintHelp() {

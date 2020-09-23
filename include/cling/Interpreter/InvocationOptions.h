@@ -91,6 +91,11 @@ namespace cling {
     std::vector<std::string> LibSearchPath;
     std::vector<std::string> Inputs;
     CompilerOptions CompilerOpts;
+    // elix22 - Urho3D related  
+    std::vector<std::string> PathsToLoad;
+    std::string ApplicationClassName;
+    std::vector<std::string> Defines;
+    std::string Urho3DHome;
 
     unsigned ErrorOut : 1;
     unsigned NoLogo : 1;
