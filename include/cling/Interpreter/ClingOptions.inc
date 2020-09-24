@@ -18,6 +18,12 @@ PREFIX(prefix_2, {"--" COMMA 0})
 
 OPTION(prefix_0, "<input>", INPUT, Input, INVALID, INVALID, 0, 0, 0, 0, 0, 0)
 OPTION(prefix_0, "<unknown>", UNKNOWN, Unknown, INVALID, INVALID, 0, 0, 0, 0, 0, 0)
+OPTION(prefix_1, "a", a, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
+       "[Urho3D] Set Urho3D Application class name", 0, 0)
+OPTION(prefix_1, "D", D, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
+       "[Urho3D] Set  #define", 0, 0)
+OPTION(prefix_1, "d", d, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
+       "[Urho3D] Add directory to load", "<directory>", 0)
 OPTION(prefix_2, "errorout", _errorout, Flag, INVALID, INVALID, 0, 0, 0,
        "Do not recover from input errors", 0, 0)
 // Re-implement to forward to our help
@@ -35,18 +41,11 @@ OPTION(prefix_2, "nologo", _nologo, Flag, INVALID, INVALID, 0, 0, 0,
        "Do not show startup-banner", 0, 0)
 OPTION(prefix_3, "noruntime", noruntime, Flag, INVALID, INVALID, 0, 0, 0,
        "Disable runtime support (no null checking, no value printing)", 0, 0)
+OPTION(prefix_1, "pp", pp, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
+       "[Urho3D] Set resource prefix path", "<resource prefix path>", 0)
+OPTION(prefix_1, "U", U, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
+       "[Urho3D] Set Urho3D build tree Home ", "<directory>", 0)
 OPTION(prefix_3, "version", version, Flag, INVALID, INVALID, 0, 0, 0,
        "Print the compiler version", 0, 0)
 OPTION(prefix_1, "v", v, Flag, INVALID, INVALID, 0, 0, 0,
        "Enable verbose output", 0, 0)
-// elix22 - Urho3D related 
-OPTION(prefix_1, "d", d, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
-       "[Urho3D] Add directory to load", "<directory>", 0)
-OPTION(prefix_1, "a", a, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
-       "[Urho3D] Set Urho3D Application class name", 0, 0)
-OPTION(prefix_1, "D", D, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
-       "[Urho3D] Set  #define", 0, 0)
-OPTION(prefix_1, "U", U, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
-       "[Urho3D] Set Urho3D build tree Home ", "<directory>", 0)
-OPTION(prefix_1, "pp", pp, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
-       "[Urho3D] Set resource prefix path", "<resource prefix path>", 0)

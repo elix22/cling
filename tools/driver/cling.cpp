@@ -216,10 +216,10 @@ int Urho3DMain(cling::Interpreter& Interp) {
     if (!loadFile(Interp, urho3dLib))
       return EXIT_FAILURE;
 #elif defined(__APPLE__)
-    std::string urho3dLib = Urho3DHome + "/bin/LibUrho3D.dylib";
+    std::string urho3dLib = Urho3DHome + "/lib/LibUrho3D.dylib";
     if (!loadFile(Interp, urho3dLib))return EXIT_FAILURE;
 #else
-    std::string urho3dLib = Urho3DHome + "/bin/LibUrho3D.so";
+    std::string urho3dLib = Urho3DHome + "/lib/LibUrho3D.so";
     if (!loadFile(Interp, urho3dLib))return EXIT_FAILURE;
 #endif
 
@@ -294,24 +294,22 @@ int Urho3DMain(cling::Interpreter& Interp) {
 
   cmd += classDeclaration + NL;
 
-
-  cmd += "void urho3d_cling_main_entry_point(){" + NL;
-  cmd += "Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context());" + NL;
-  std::string appClassNameDeclaration =
-      "Urho3D::SharedPtr<Urho3DClingProxyApplication> application(new Urho3DClingProxyApplication(context));"+ NL;
-
-  cmd += appClassNameDeclaration + NL;
-  cmd += "application->Run();" + NL;
-  cmd += "}" + NL;
-
-
   //printf("%s", cmd.c_str());
-
-    Ui.getMetaProcessor()->process(cmd, Result, 0);
+  
+  Ui.getMetaProcessor()->process(cmd, Result, 0);
   if (Result == cling::Interpreter::CompilationResult::kFailure)
     return EXIT_FAILURE;
 
-   Ui.getMetaProcessor()->process("urho3d_cling_main_entry_point();", Result, 0);
+
+  Ui.getMetaProcessor()->process("Urho3D::SharedPtr<Urho3D::Context> context(new Urho3D::Context());", Result, 0);
+  if (Result == cling::Interpreter::CompilationResult::kFailure)
+    return EXIT_FAILURE;
+
+  Ui.getMetaProcessor()->process("Urho3D::SharedPtr<Urho3DClingProxyApplication> application(new Urho3DClingProxyApplication(context));", Result, 0);
+  if (Result == cling::Interpreter::CompilationResult::kFailure)
+    return EXIT_FAILURE;
+
+  Ui.getMetaProcessor()->process("application->Run();", Result, 0);
   if (Result == cling::Interpreter::CompilationResult::kFailure)
     return EXIT_FAILURE;
 
