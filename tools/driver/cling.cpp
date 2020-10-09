@@ -219,7 +219,7 @@ int Urho3DMain(cling::Interpreter& Interp) {
     std::string urho3dLib = Urho3DHome + "/lib/LibUrho3D.dylib";
     if (!loadFile(Interp, urho3dLib))return EXIT_FAILURE;
 #else
-    std::string urho3dLib = Urho3DHome + "/lib/LibUrho3D.so";
+    std::string urho3dLib = Urho3DHome + "/lib/libUrho3D.so";
     if (!loadFile(Interp, urho3dLib))return EXIT_FAILURE;
 #endif
 
